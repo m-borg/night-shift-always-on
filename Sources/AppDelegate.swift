@@ -119,7 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         switch controller.state {
         case .alwaysOn:
-            setNightShiftMenuIcon(enabled: true, description: "Night Shift Always On")
+            setStatusIcon(symbolName: "moon.stars.fill", fallback: "NS", description: "Night Shift Always On")
             button?.appearsDisabled = false
             statusTitleItem.title = "Night Shift: Always On"
             let toTime = controller.lastStatus.schedule.toTime
@@ -131,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             toggleItem.isEnabled = true
 
         case .manualOff:
-            setNightShiftMenuIcon(enabled: false, description: "Night Shift Off (Manual)")
+            setStatusIcon(symbolName: "moon", fallback: "ns", description: "Night Shift Off (Manual)")
             button?.appearsDisabled = true
             statusTitleItem.title = "Night Shift: Off (Manual)"
             statusSubtitleItem.title = "Won't turn on until you click it back on"
@@ -151,69 +151,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         warmthLabel.stringValue = "Warmth: \(pct)%"
         warmthSlider.doubleValue = Double(controller.strength)
         launchAtLoginItem.state = FileManager.default.fileExists(atPath: Self.launchAgentURL.path) ? .on : .off
-    }
-
-    private func setNightShiftMenuIcon(enabled: Bool, description: String) {
-        guard let button = statusItem.button else { return }
-        let size = NSSize(width: 18, height: 18)
-        let image = NSImage(size: size, flipped: false) { rect in
-            guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
-            let cx = rect.midX
-            let cy = rect.midY
-
-            ctx.setStrokeColor(NSColor.black.cgColor)
-            ctx.setFillColor(NSColor.black.cgColor)
-            ctx.setLineCap(.round)
-
-            // 8 rounded sun rays matching the app logo
-            ctx.setLineWidth(1.65)
-            let rayInner: CGFloat = 5.9
-            let rayOuter: CGFloat = 7.7
-            for i in 0..<8 {
-                let angle = CGFloat(i) * (.pi / 4.0)
-                let x1 = cx + cos(angle) * rayInner
-                let y1 = cy + sin(angle) * rayInner
-                let x2 = cx + cos(angle) * rayOuter
-                let y2 = cy + sin(angle) * rayOuter
-                ctx.move(to: CGPoint(x: x1, y: y1))
-                ctx.addLine(to: CGPoint(x: x2, y: y2))
-            }
-            ctx.strokePath()
-
-            // Center sun ring with crescent cutout matching the Night Shift logo
-            let outerR: CGFloat = 4.25
-            let ringPath = CGMutablePath()
-            ringPath.addEllipse(in: CGRect(x: cx - outerR, y: cy - outerR, width: outerR * 2, height: outerR * 2))
-
-            if enabled {
-                // Solid disc with a warm crescent cutout on the left, matching the logo silhouette
-                ctx.saveGState()
-                ctx.addPath(ringPath)
-                ctx.clip()
-                ctx.addPath(ringPath)
-                ctx.fillPath()
-
-                ctx.setBlendMode(.clear)
-                let innerR: CGFloat = 2.85
-                ctx.fillEllipse(in: CGRect(x: cx - innerR, y: cy - innerR, width: innerR * 2, height: innerR * 2))
-
-                ctx.setBlendMode(.normal)
-                let moonR: CGFloat = 2.55
-                ctx.fillEllipse(in: CGRect(x: cx + 1.15 - moonR, y: cy - moonR, width: moonR * 2, height: moonR * 2))
-                ctx.restoreGState()
-            } else {
-                // Outlined ring when manually off
-                ctx.setLineWidth(1.35)
-                ctx.addEllipse(in: CGRect(x: cx - 3.6, y: cy - 3.6, width: 7.2, height: 7.2))
-                ctx.strokePath()
-            }
-
-            return true
-        }
-        image.isTemplate = true
-        image.accessibilityDescription = description
-        button.image = image
-        button.title = ""
     }
 
     private func setStatusIcon(symbolName: String, fallback: String, description: String) {
